@@ -10,6 +10,12 @@ Aplikacja do szybkiego tworzenia portfolio przez wklejanie linków do projektów
 - 🎨 Piękne kafelki z podglądami projektów
 - 🔗 Unikalny link do Twojego portfolio
 - 📱 Responsywny design
+- 👑 **Premium (19 zł/miesiąc)**:
+  - ✏️ Edycja nazwy (imię i nazwisko)
+  - 🖼️ Upload własnego logo (Cloudinary)
+  - 📧 Edycja emaila z opcją ukrycia
+  - 🔗 Custom link (np. `/portfolio/twoj-link`)
+  - 🔗 Linki do social media (GitHub, LinkedIn, Twitter, itp.)
 
 ## Wymagania
 
@@ -44,8 +50,15 @@ GOOGLE_CLIENT_ID=twój-google-client-id
 GOOGLE_CLIENT_SECRET=twój-google-client-secret
 
 # Opcjonalnie - dla lepszej jakości screenshotów:
-# SCREENSHOT_API_KEY=twój-klucz-z-screenshotapi.net
-# SCREENSHOTONE_API_KEY=twój-klucz-z-screenshotone.com
+SCREENSHOTONE_ACCESS_KEY=twój-klucz-z-screenshotone.com
+SCREENSHOTONE_SECRET_KEY=twój-secret-key-z-screenshotone.com
+
+# Wymagane dla funkcji Premium:
+STRIPE_SECRET_KEY=sk_test_twój-stripe-secret-key
+STRIPE_WEBHOOK_SECRET=whsec_twój-webhook-secret
+CLOUDINARY_CLOUD_NAME=twój-cloud-name
+CLOUDINARY_API_KEY=twój-api-key
+CLOUDINARY_API_SECRET=twój-api-secret
 ```
 
 5. Wygeneruj klucz NEXTAUTH_SECRET:
@@ -64,22 +77,37 @@ openssl rand -base64 32
 7. (Opcjonalnie) Skonfiguruj API do screenshotów:
    - Aplikacja automatycznie generuje screenshoty stron
    - Dla lepszej jakości możesz dodać klucz API:
-     - [screenshotapi.net](https://screenshotapi.net) - darmowy tier dostępny
      - [screenshotone.com](https://screenshotone.com) - darmowy tier dostępny
-   - Dodaj klucz do pliku `.env` jako `SCREENSHOT_API_KEY` lub `SCREENSHOTONE_API_KEY`
+   - Dodaj klucz do pliku `.env` jako `SCREENSHOTONE_ACCESS_KEY` i `SCREENSHOTONE_SECRET_KEY`
 
-8. Zainicjalizuj bazę danych:
+8. (Wymagane dla Premium) Skonfiguruj Stripe:
+   - Utwórz konto na [Stripe](https://stripe.com)
+   - Przejdź do sekcji Developers > API keys
+   - Skopiuj Secret key (testowy lub produkcyjny) do `STRIPE_SECRET_KEY`
+   - Utwórz webhook endpoint w Stripe Dashboard:
+     - URL: `https://twoja-domena.com/api/stripe/webhook`
+     - Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+   - Skopiuj webhook secret do `STRIPE_WEBHOOK_SECRET`
+
+9. (Wymagane dla Premium) Skonfiguruj Cloudinary:
+   - Utwórz konto na [Cloudinary](https://cloudinary.com)
+   - Przejdź do Dashboard i skopiuj:
+     - Cloud name → `CLOUDINARY_CLOUD_NAME`
+     - API Key → `CLOUDINARY_API_KEY`
+     - API Secret → `CLOUDINARY_API_SECRET`
+
+10. Zainicjalizuj bazę danych:
 ```bash
 npx prisma generate
 npx prisma db push
 ```
 
-9. Uruchom serwer deweloperski:
+11. Uruchom serwer deweloperski:
 ```bash
 npm run dev
 ```
 
-10. Otwórz [http://localhost:3000](http://localhost:3000) w przeglądarce.
+12. Otwórz [http://localhost:3000](http://localhost:3000) w przeglądarce.
 
 ## Użycie
 
@@ -94,10 +122,12 @@ npm run dev
 - **Next.js 14** - Framework React
 - **NextAuth.js** - Autentykacja
 - **Prisma** - ORM dla bazy danych
-- **SQLite** - Baza danych (można zmienić na PostgreSQL)
+- **PostgreSQL** - Baza danych (można zmienić na SQLite)
 - **Tailwind CSS** - Stylowanie
 - **TypeScript** - Typowanie
 - **Cheerio** - Parsowanie HTML do pobierania metadanych
+- **Stripe** - Płatności i subskrypcje
+- **Cloudinary** - Hosting obrazów (logo)
 
 ## Struktura projektu
 
@@ -121,6 +151,14 @@ portfolieo/
 ```
 
 ## Rozwój
+
+### Funkcje Premium (zaimplementowane):
+
+- [x] Edycja nazwy (imię i nazwisko)
+- [x] Upload własnego logo
+- [x] Edycja emaila z opcją ukrycia
+- [x] Custom link (np. `/portfolio/twoj-link`)
+- [x] Linki do social media
 
 ### Dodatkowe funkcje do rozważenia:
 

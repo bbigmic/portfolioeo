@@ -38,16 +38,30 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  projects      Project[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  name                  String?
+  email                 String?   @unique
+  emailVerified         DateTime?
+  image                 String?
+  accounts              Account[]
+  sessions              Session[]
+  projects              Project[]
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  // Premium fields
+  isPremium             Boolean   @default(false)
+  stripeCustomerId      String?
+  stripeSubscriptionId  String?
+  customSlug            String?   @unique
+  
+  // Custom profile fields (premium only)
+  customName            String?
+  customLogo            String?
+  customBackground      String?
+  customEmail           String?
+  hideEmail             Boolean   @default(false)
+  socialLinks           SocialLink[]
 }
 
 model VerificationToken {
@@ -71,5 +85,17 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   order      Int      @default(0)
+}
+
+model SocialLink {
+  id        String   @id @default(cuid())
+  platform  String   // e.g., "github", "linkedin", "twitter", "website"
+  url       String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
 }
 

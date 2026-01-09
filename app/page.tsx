@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import SignInButton from "./components/SignInButton";
 import Image from "next/image";
 import StructuredData from "./components/StructuredData";
+import ImageCarousel from "./components/ImageCarousel";
 import { 
   Zap, 
   Link2, 
@@ -28,44 +29,61 @@ export default async function Home() {
       <StructuredData />
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         {/* Navigation */}
-      <nav className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Image
-              src="/logo-portfolioeo.png"
-              alt="Portfolioeo Logo"
-              width={32}
-              height={32}
-              className="w-8 h-8"
-              priority
-            />
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Portfolioeo
-            </span>
+      <nav className="fixed top-0 left-0 right-0 z-50">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Image
+                src="/logo-portfolioeo.png"
+                alt="Portfolioeo Logo"
+                width={32}
+                height={32}
+                className="w-8 h-8"
+                priority
+              />
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Portfolioeo
+              </span>
+            </div>
+            <SignInButton />
           </div>
-          <SignInButton />
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 md:py-32">
-        <div className="max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 mb-8 text-sm font-medium">
+      <section className="relative overflow-hidden pt-24">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="https://res.cloudinary.com/dd0dqviwc/image/upload/v1767946801/ChatGPT_Image_Jan_9_2026_09_02_43_AM_w8emni.png"
+            alt="Hero background"
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+          />
+          {/* Overlay gradient dla czytelności */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 via-purple-900/70 to-pink-900/80 dark:from-gray-900/90 dark:via-gray-800/85 dark:to-gray-900/90"></div>
+        </div>
+        
+        <div className="relative z-10 container mx-auto px-4 py-20 md:py-32">
+          <div className="max-w-5xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 dark:bg-white/10 backdrop-blur-sm border border-white/30 text-white mb-8 text-sm font-medium">
             <Zap className="w-4 h-4" />
             <span>Tworzenie portfolio w minutę</span>
           </div>
           
           <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 bg-clip-text text-transparent drop-shadow-lg">
               Stwórz swoje portfolio
             </span>
             <br />
-            <span className="text-gray-900 dark:text-white">
+            <span className="text-white drop-shadow-lg">
               bez wysiłku
             </span>
           </h1>
           
-          <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl md:text-2xl text-white/90 dark:text-white/95 mb-12 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
             Wklej linki do swoich projektów, a my automatycznie pobierzemy metadane, 
             wygenerujemy screenshoty i stworzymy piękne portfolio gotowe do udostępnienia.
           </p>
@@ -74,7 +92,7 @@ export default async function Home() {
             <SignInButton />
             <a 
               href="#jak-to-dziala" 
-              className="px-8 py-4 rounded-lg border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
+              className="px-8 py-4 rounded-lg border-2 border-white/30 bg-white/10 backdrop-blur-sm text-white font-medium hover:bg-white/20 hover:border-white/50 transition-all"
             >
               Dowiedz się więcej
             </a>
@@ -83,7 +101,7 @@ export default async function Home() {
           {/* Hero Visual */}
           <div className="relative mt-16">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 blur-3xl rounded-full"></div>
-            <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700">
+            <div className="relative bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/20 dark:border-gray-700">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 rounded-lg p-6 h-48 flex items-center justify-center">
@@ -98,6 +116,7 @@ export default async function Home() {
                 ))}
               </div>
             </div>
+          </div>
           </div>
         </div>
       </section>
@@ -169,6 +188,21 @@ export default async function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Image Carousel Section */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900 dark:text-white">
+              Dołącz do społeczności
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300">
+              Zobacz jak inni osiągają sukces z Portfolioeo
+            </p>
+          </div>
+          <ImageCarousel />
         </div>
       </section>
 
