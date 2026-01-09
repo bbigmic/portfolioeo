@@ -1,4 +1,4 @@
-# Portfolieo
+# Portfolioeo
 
 Aplikacja do szybkiego tworzenia portfolio przez wklejanie linków do projektów. Zaloguj się przez Google, dodaj linki do swoich projektów, a aplikacja automatycznie pobierze podglądy, ikony i tytuły.
 
@@ -22,7 +22,7 @@ Aplikacja do szybkiego tworzenia portfolio przez wklejanie linków do projektów
 1. Sklonuj repozytorium:
 ```bash
 git clone <repo-url>
-cd portfolieo
+cd portfolioeo
 ```
 
 2. Zainstaluj zależności:

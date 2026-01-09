@@ -136,7 +136,7 @@ export default async function PortfolioPage({
                 href="/"
                 className="text-blue-600 dark:text-blue-400 hover:underline"
               >
-                Portfolieo
+                Portfolioeo
               </Link>
             </p>
           </div>

@@ -30,7 +30,7 @@ export default async function Home() {
           <div className="flex items-center gap-2">
             <Sparkles className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Portfolieo
+              Portfolioeo
             </span>
           </div>
           <SignInButton />
@@ -255,11 +255,11 @@ export default async function Home() {
             <div className="flex items-center gap-2 mb-4 md:mb-0">
               <Sparkles className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Portfolieo
+                Portfolioeo
               </span>
             </div>
             <p className="text-gray-600 dark:text-gray-400 text-center md:text-right">
-              © {new Date().getFullYear()} Portfolieo. Wszystkie prawa zastrzeżone.
+              © {new Date().getFullYear()} Portfolioeo. Wszystkie prawa zastrzeżone.
             </p>
           </div>
         </div>

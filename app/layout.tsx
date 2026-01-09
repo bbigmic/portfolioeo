@@ -6,7 +6,7 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Portfolieo - Twoje Portfolio w Minutę",
+  title: "Portfolioeo - Twoje Portfolio w Minutę",
   description: "Szybko stwórz swoje portfolio wklejając linki do projektów",
 };
 
