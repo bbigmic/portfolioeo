@@ -41,14 +41,14 @@ export default async function Home() {
                 className="w-8 h-8"
                 priority
               />
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Portfolioeo
-              </span>
-            </div>
-            <SignInButton />
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Portfolioeo
+            </span>
           </div>
+          <SignInButton variant="compact" />
         </div>
-      </nav>
+      </div>
+    </nav>
 
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-24">
@@ -103,15 +103,36 @@ export default async function Home() {
             <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 blur-3xl rounded-full"></div>
             <div className="relative bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/20 dark:border-gray-700">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 rounded-lg p-6 h-48 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                        <Globe className="w-8 h-8 text-white" />
-                      </div>
-                      <div className="h-2 bg-gray-300 dark:bg-gray-600 rounded w-24 mx-auto mb-2"></div>
-                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div>
+                {[
+                  {
+                    icon: Zap,
+                    title: "Dodaj projekty w kilka sekund",
+                    description: "Wrzuć swoje realizacje błyskawicznie – bez technicznej wiedzy, bez frustracji. Skup się na tworzeniu, resztę robimy za Ciebie.",
+                    color: "from-blue-500 to-cyan-500"
+                  },
+                  {
+                    icon: Palette,
+                    title: "Edytuj portfolio tak, jak chcesz",
+                    description: "Zmieniaj wygląd strony w czasie rzeczywistym. Dopasuj styl do swojej marki i wyróżnij się na tle konkurencji.",
+                    color: "from-purple-500 to-pink-500"
+                  },
+                  {
+                    icon: Share2,
+                    title: "Jedno kliknięcie = gotowe portfolio do udostępnienia",
+                    description: "Udostępnij profesjonalny link klientom, rekruterom i partnerom – zawsze aktualny, zawsze dopracowany.",
+                    color: "from-pink-500 to-rose-500"
+                  }
+                ].map((feature, index) => (
+                  <div key={index} className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 rounded-lg p-6 min-h-48 flex flex-col">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                      <feature.icon className="w-8 h-8 text-white" />
                     </div>
+                    <h3 className="text-lg font-bold mb-3 text-gray-900 dark:text-white text-center">
+                      {feature.title}
+                    </h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 text-center leading-relaxed flex-grow">
+                      {feature.description}
+                    </p>
                   </div>
                 ))}
               </div>

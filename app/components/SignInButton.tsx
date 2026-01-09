@@ -2,12 +2,18 @@
 
 import { signIn } from "next-auth/react"
 
-export default function SignInButton() {
+interface SignInButtonProps {
+  variant?: "full" | "compact"
+}
+
+export default function SignInButton({ variant = "full" }: SignInButtonProps) {
+  const isCompact = variant === "compact"
+  
   return (
     <button
       type="button"
       onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-      className="button"
+      className={`button ${isCompact ? "md:px-6 px-3" : ""}`}
       style={{
         "--provider-bg": "#fff",
         "--provider-dark-bg": "#fff",
@@ -24,7 +30,7 @@ export default function SignInButton() {
         id="provider-logo"
         src="https://authjs.dev/img/providers/google.svg"
         alt="Google"
-        className="dark:hidden"
+        className="dark:hidden flex-shrink-0"
       />
       <img
         loading="lazy"
@@ -33,9 +39,9 @@ export default function SignInButton() {
         id="provider-logo-dark"
         src="https://authjs.dev/img/providers/google.svg"
         alt="Google"
-        className="hidden dark:block"
+        className="hidden dark:block flex-shrink-0"
       />
-      <span>Sign in with Google</span>
+      <span className={isCompact ? "hidden md:inline" : ""}>Sign in with Google</span>
     </button>
   )
 }
