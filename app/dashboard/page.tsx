@@ -133,12 +133,19 @@ export default function Dashboard() {
       const res = await fetch("/api/profile")
       if (res.ok) {
         const data = await res.json()
+        console.log("[DEBUG] Profile fetched successfully:", data)
         setProfile(data)
         updatePortfolioUrl(data.customSlug)
+      } else {
+        // Jeśli request się nie powiódł, ustaw profile na null, ale zakończ loading
+        console.log("[DEBUG] Profile fetch failed, status:", res.status)
+        setProfile(null)
       }
     } catch (error) {
-      console.error("Error fetching profile:", error)
+      console.error("[DEBUG] Error fetching profile:", error)
+      setProfile(null)
     } finally {
+      console.log("[DEBUG] Setting loadingProfile to false")
       setLoadingProfile(false)
     }
   }, [updatePortfolioUrl])
@@ -193,8 +200,11 @@ export default function Dashboard() {
       fetchProjects()
       fetchProfile()
       updatePortfolioUrl()
+    } else if (status === "authenticated" && !session?.user?.id) {
+      // Jeśli jesteśmy zalogowani ale nie ma user.id, zakończ loading
+      setLoadingProfile(false)
     }
-  }, [session, fetchProfile, updatePortfolioUrl])
+  }, [session, status, fetchProfile, updatePortfolioUrl])
 
   useEffect(() => {
     if (profile) {
@@ -207,6 +217,16 @@ export default function Dashboard() {
       }
     }
   }, [profile])
+
+  // Debug logging - tymczasowe
+  useEffect(() => {
+    console.log("[DEBUG] Premium section render check:", {
+      loadingProfile,
+      profile,
+      profileIsPremium: profile?.isPremium,
+      shouldShow: !loadingProfile && (!profile || !profile.isPremium)
+    })
+  }, [loadingProfile, profile])
 
   const handleCheckout = async () => {
     try {
@@ -534,6 +554,31 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
+
+          {/* Premium Section - tylko dla użytkowników bez premium */}
+          {!loadingProfile && (!profile || !profile.isPremium) && (
+            <div className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 dark:from-yellow-600 dark:via-yellow-700 dark:to-yellow-800 rounded-lg p-6 mb-8 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Crown className="text-white" size={32} />
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-1">
+                      Wykup Premium
+                    </h2>
+                    <p className="text-yellow-100">
+                      Tylko 19 zł/miesiąc - edytuj profil, custom link, social media
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCheckout}
+                  className="px-6 py-3 bg-white text-yellow-600 font-semibold rounded-lg hover:bg-yellow-50 transition-colors"
+                >
+                  Wykup Premium
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Subscription Settings Modal */}
           {showSettings && (
