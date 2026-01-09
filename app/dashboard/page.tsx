@@ -1,7 +1,7 @@
 "use client"
 
 import { useSession, signOut } from "next-auth/react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Plus, Trash2, ExternalLink, Copy, Check, Crown, Upload, X, Link as LinkIcon } from "lucide-react"
 import Image from "next/image"
@@ -36,10 +36,31 @@ interface SocialLink {
   url: string
 }
 
+function SearchParamsHandler({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const { showToast } = useToast()
+
+  useEffect(() => {
+    const success = searchParams.get("success")
+    const canceled = searchParams.get("canceled")
+    
+    if (success === "true") {
+      showToast("Subskrypcja Premium została aktywowana!", "success")
+      onSuccess()
+      router.replace("/dashboard")
+    } else if (canceled === "true") {
+      onCancel()
+      router.replace("/dashboard")
+    }
+  }, [searchParams, router, showToast, onSuccess, onCancel])
+
+  return null
+}
+
 export default function Dashboard() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { showToast } = useToast()
   const { confirm } = useConfirm()
   const [projects, setProjects] = useState<Project[]>([])
@@ -80,7 +101,7 @@ export default function Dashboard() {
       fetchProfile()
       updatePortfolioUrl()
     }
-  }, [session])
+  }, [session, fetchProfile, updatePortfolioUrl])
 
   useEffect(() => {
     if (profile) {
@@ -90,19 +111,6 @@ export default function Dashboard() {
       setCustomSlug(profile.customSlug || "")
     }
   }, [profile])
-
-  useEffect(() => {
-    const success = searchParams.get("success")
-    const canceled = searchParams.get("canceled")
-    
-    if (success === "true") {
-      showToast("Subskrypcja Premium została aktywowana!", "success")
-      fetchProfile()
-      router.replace("/dashboard")
-    } else if (canceled === "true") {
-      router.replace("/dashboard")
-    }
-  }, [searchParams, router, showToast])
 
   const fetchProjects = async () => {
     try {
@@ -116,7 +124,7 @@ export default function Dashboard() {
     }
   }
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const res = await fetch("/api/profile")
       if (res.ok) {
@@ -129,16 +137,16 @@ export default function Dashboard() {
     } finally {
       setLoadingProfile(false)
     }
-  }
+  }, [updatePortfolioUrl])
 
-  const updatePortfolioUrl = (customSlug?: string | null) => {
+  const updatePortfolioUrl = useCallback((customSlug?: string | null) => {
     const origin = typeof window !== "undefined" ? window.location.origin : baseUrl || ""
     if (customSlug) {
       setPortfolioUrl(`${origin}/portfolio/${customSlug}`)
     } else if (session?.user?.id) {
       setPortfolioUrl(`${origin}/portfolio/${session.user.id}`)
     }
-  }
+  }, [baseUrl, session])
 
   const handleCheckout = async () => {
     try {
@@ -430,7 +438,14 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <>
+      <Suspense fallback={null}>
+        <SearchParamsHandler 
+          onSuccess={fetchProfile}
+          onCancel={() => {}}
+        />
+      </Suspense>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
@@ -801,6 +816,7 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+    </>
   )
 }
 
