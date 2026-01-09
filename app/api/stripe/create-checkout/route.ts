@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already has active subscription
-    if (user.isPremium && user.stripeSubscriptionId) {
+    if ((user as any).isPremium && (user as any).stripeSubscriptionId) {
       return NextResponse.json(
         { error: "You already have an active subscription" },
         { status: 400 }
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create or retrieve Stripe customer
-    let customerId = user.stripeCustomerId
+    let customerId = (user as any).stripeCustomerId
 
     if (!customerId) {
       const customer = await stripe.customers.create({
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
       await prisma.user.update({
         where: { id: user.id },
-        data: { stripeCustomerId: customerId },
+        data: { stripeCustomerId: customerId } as any,
       })
     }
 

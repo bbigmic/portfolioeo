@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react"
 import { useEffect, useState, Suspense, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Plus, Trash2, ExternalLink, Copy, Check, Crown, Upload, X, Link as LinkIcon } from "lucide-react"
+import { Plus, Trash2, ExternalLink, Copy, Check, Crown, Upload, X, Link as LinkIcon, Settings } from "lucide-react"
 import Image from "next/image"
 import ProjectImage from "../components/ProjectImage"
 import { useToast } from "../components/ToastContainer"
@@ -28,6 +28,14 @@ interface Profile {
   hideEmail: boolean
   customSlug: string | null
   socialLinks: SocialLink[]
+}
+
+interface SubscriptionInfo {
+  hasSubscription: boolean
+  status?: string
+  cancelAtPeriodEnd?: boolean
+  currentPeriodEnd?: number
+  cancelAt?: number | null
 }
 
 interface SocialLink {
@@ -73,6 +81,10 @@ export default function Dashboard() {
   const [savingProfile, setSavingProfile] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [uploadingBackground, setUploadingBackground] = useState(false)
+  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null)
+  const [loadingSubscriptionInfo, setLoadingSubscriptionInfo] = useState(false)
+  const [cancelingSubscription, setCancelingSubscription] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   
   // Profile form state
   const [customName, setCustomName] = useState("")
@@ -95,22 +107,14 @@ export default function Dashboard() {
     }
   }, [])
 
-  useEffect(() => {
-    if (session?.user?.id) {
-      fetchProjects()
-      fetchProfile()
-      updatePortfolioUrl()
+  const updatePortfolioUrl = useCallback((customSlug?: string | null) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : baseUrl || ""
+    if (customSlug) {
+      setPortfolioUrl(`${origin}/portfolio/${customSlug}`)
+    } else if (session?.user?.id) {
+      setPortfolioUrl(`${origin}/portfolio/${session.user.id}`)
     }
-  }, [session, fetchProfile, updatePortfolioUrl])
-
-  useEffect(() => {
-    if (profile) {
-      setCustomName(profile.customName || "")
-      setCustomEmail(profile.customEmail || "")
-      setHideEmail(profile.hideEmail || false)
-      setCustomSlug(profile.customSlug || "")
-    }
-  }, [profile])
+  }, [baseUrl, session])
 
   const fetchProjects = async () => {
     try {
@@ -139,14 +143,70 @@ export default function Dashboard() {
     }
   }, [updatePortfolioUrl])
 
-  const updatePortfolioUrl = useCallback((customSlug?: string | null) => {
-    const origin = typeof window !== "undefined" ? window.location.origin : baseUrl || ""
-    if (customSlug) {
-      setPortfolioUrl(`${origin}/portfolio/${customSlug}`)
-    } else if (session?.user?.id) {
-      setPortfolioUrl(`${origin}/portfolio/${session.user.id}`)
+  const fetchSubscriptionInfo = useCallback(async () => {
+    if (!profile?.isPremium) return
+    
+    setLoadingSubscriptionInfo(true)
+    try {
+      const res = await fetch("/api/stripe/subscription-info")
+      if (res.ok) {
+        const data = await res.json()
+        setSubscriptionInfo(data)
+      }
+    } catch (error) {
+      console.error("Error fetching subscription info:", error)
+    } finally {
+      setLoadingSubscriptionInfo(false)
     }
-  }, [baseUrl, session])
+  }, [profile?.isPremium])
+
+  const handleCancelSubscription = async () => {
+    const confirmed = await confirm(
+      "Czy na pewno chcesz anulować subskrypcję? Dostęp do funkcji Premium zostanie zachowany do końca okresu rozliczeniowego."
+    )
+    if (!confirmed) return
+
+    setCancelingSubscription(true)
+    try {
+      const res = await fetch("/api/stripe/cancel-subscription", {
+        method: "POST",
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        showToast("Subskrypcja zostanie anulowana na końcu okresu rozliczeniowego", "success")
+        await fetchSubscriptionInfo()
+      } else {
+        const error = await res.json()
+        showToast(error.error || "Nie udało się anulować subskrypcji", "error")
+      }
+    } catch (error) {
+      console.error("Error canceling subscription:", error)
+      showToast("Wystąpił błąd podczas anulowania subskrypcji", "error")
+    } finally {
+      setCancelingSubscription(false)
+    }
+  }
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchProjects()
+      fetchProfile()
+      updatePortfolioUrl()
+    }
+  }, [session, fetchProfile, updatePortfolioUrl])
+
+  useEffect(() => {
+    if (profile) {
+      setCustomName(profile.customName || "")
+      setCustomEmail(profile.customEmail || "")
+      setHideEmail(profile.hideEmail || false)
+      setCustomSlug(profile.customSlug || "")
+      if (profile.isPremium) {
+        fetchSubscriptionInfo()
+      }
+    }
+  }, [profile])
 
   const handleCheckout = async () => {
     try {
@@ -458,38 +518,109 @@ export default function Dashboard() {
                 Witaj, {session.user?.name || session.user?.email}
               </p>
             </div>
-            <button
-              onClick={() => signOut()}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              Wyloguj
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className="p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                title="Ustawienia subskrypcji"
+              >
+                <Settings size={24} />
+              </button>
+              <button
+                onClick={() => signOut()}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Wyloguj
+              </button>
+            </div>
           </div>
 
-          {/* Premium Section */}
-          {!loadingProfile && (
-            <div className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 dark:from-yellow-600 dark:via-yellow-700 dark:to-yellow-800 rounded-lg p-6 mb-8 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Crown className="text-white" size={32} />
-                  <div>
-                    <h2 className="text-2xl font-bold text-white mb-1">
-                      {profile?.isPremium ? "Masz Premium!" : "Wykup Premium"}
-                    </h2>
-                    <p className="text-yellow-100">
-                      {profile?.isPremium
-                        ? "Ciesz się wszystkimi funkcjami premium - przewiń w dół aby edytować profil"
-                        : "Tylko 19 zł/miesiąc - edytuj profil, custom link, social media"}
-                    </p>
-                  </div>
-                </div>
-                {!profile?.isPremium && (
+          {/* Subscription Settings Modal */}
+          {showSettings && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowSettings(false)}>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <Settings size={24} />
+                    Zarządzanie Subskrypcją
+                  </h2>
                   <button
-                    onClick={handleCheckout}
-                    className="px-6 py-3 bg-white text-yellow-600 font-semibold rounded-lg hover:bg-yellow-50 transition-colors"
+                    onClick={() => setShowSettings(false)}
+                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >
-                    Wykup Premium
+                    <X size={24} />
                   </button>
+                </div>
+
+                {loadingProfile ? (
+                  <p className="text-center py-4">Ładowanie...</p>
+                ) : profile?.isPremium ? (
+                  <>
+                    <div className="mb-6 p-4 bg-gradient-to-r from-yellow-400 to-yellow-500 dark:from-yellow-600 dark:to-yellow-700 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Crown className="text-white" size={24} />
+                        <h3 className="text-lg font-semibold text-white">Masz Premium!</h3>
+                      </div>
+                      <p className="text-yellow-100 text-sm">
+                        Ciesz się wszystkimi funkcjami premium
+                      </p>
+                    </div>
+
+                    {loadingSubscriptionInfo ? (
+                      <p className="text-center py-4">Ładowanie informacji o subskrypcji...</p>
+                    ) : subscriptionInfo?.hasSubscription ? (
+                      <div className="space-y-4">
+                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                          <p className="font-medium mb-2">Status subskrypcji</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {subscriptionInfo.cancelAtPeriodEnd
+                              ? `Subskrypcja zostanie anulowana: ${subscriptionInfo.currentPeriodEnd ? new Date(subscriptionInfo.currentPeriodEnd * 1000).toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" }) : "Nieznana data"}`
+                              : "Subskrypcja aktywna"}
+                          </p>
+                          {subscriptionInfo.currentPeriodEnd && !subscriptionInfo.cancelAtPeriodEnd && (
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                              Następne odnowienie: {new Date(subscriptionInfo.currentPeriodEnd * 1000).toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" })}
+                            </p>
+                          )}
+                        </div>
+                        {!subscriptionInfo.cancelAtPeriodEnd && (
+                          <button
+                            onClick={handleCancelSubscription}
+                            disabled={cancelingSubscription}
+                            className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {cancelingSubscription ? "Anulowanie..." : "Anuluj subskrypcję"}
+                          </button>
+                        )}
+                        {subscriptionInfo.cancelAtPeriodEnd && (
+                          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                              Twoja subskrypcja zostanie anulowana na końcu okresu rozliczeniowego. 
+                              Dostęp do funkcji Premium pozostanie aktywny do {subscriptionInfo.currentPeriodEnd ? new Date(subscriptionInfo.currentPeriodEnd * 1000).toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" }) : "końca okresu"}.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-center py-4 text-gray-600 dark:text-gray-400">Nie znaleziono aktywnej subskrypcji</p>
+                    )}
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-center py-4">
+                      <Crown className="mx-auto mb-3 text-yellow-500" size={48} />
+                      <h3 className="text-xl font-semibold mb-2">Wykup Premium</h3>
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">
+                        Tylko 19 zł/miesiąc - edytuj profil, custom link, social media
+                      </p>
+                      <button
+                        onClick={handleCheckout}
+                        className="w-full px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-white font-semibold rounded-lg transition-colors"
+                      >
+                        Wykup Premium
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

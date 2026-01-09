@@ -36,39 +36,63 @@ export async function POST(request: NextRequest) {
             data: {
               isPremium: true,
               stripeSubscriptionId: session.subscription as string,
-            },
+            } as any,
           })
         }
         break
       }
 
-      case "customer.subscription.updated":
-      case "customer.subscription.deleted": {
+      case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription
         const customerId = subscription.customer as string
 
         const user = await prisma.user.findFirst({
-          where: { stripeCustomerId: customerId },
+          where: { stripeCustomerId: customerId } as any,
         })
 
         if (user) {
-          if (subscription.status === "active") {
+          // Jeśli subskrypcja jest aktywna (nawet jeśli zaplanowana do anulowania), zachowaj premium
+          // Premium zostanie usunięte dopiero gdy subskrypcja faktycznie się zakończy
+          if (subscription.status === "active" || subscription.status === "trialing") {
             await prisma.user.update({
               where: { id: user.id },
               data: {
                 isPremium: true,
                 stripeSubscriptionId: subscription.id,
-              },
+              } as any,
             })
           } else {
+            // Subskrypcja została faktycznie zakończona
             await prisma.user.update({
               where: { id: user.id },
               data: {
                 isPremium: false,
                 stripeSubscriptionId: null,
-              },
+              } as any,
             })
           }
+        }
+        break
+      }
+
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object as Stripe.Subscription
+        const customerId = subscription.customer as string
+
+        const user = await prisma.user.findFirst({
+          where: { stripeCustomerId: customerId } as any,
+        })
+
+        if (user) {
+          // Subskrypcja została usunięta - deaktywuj premium
+          // Dane użytkownika (customName, customLogo, etc.) pozostają zachowane
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              isPremium: false,
+              stripeSubscriptionId: null,
+            } as any,
+          })
         }
         break
       }
