@@ -14,10 +14,11 @@ export async function fetchSiteMetadata(url: string): Promise<SiteMetadata> {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       },
+      signal: AbortSignal.timeout(30000), // 30 sekund timeout
     })
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch: ${response.status}`)
+      throw new Error(`URL nie jest dostępny: ${response.status} ${response.statusText}`)
     }
 
     const html = await response.text()
@@ -77,15 +78,11 @@ export async function fetchSiteMetadata(url: string): Promise<SiteMetadata> {
     }
   } catch (error) {
     console.error('Error fetching metadata:', error)
-    // Even if metadata fetch fails, store the URL for screenshot generation
-    const screenshot = url
-    return {
-      title: null,
-      description: null,
-      image: null,
-      favicon: null,
-      screenshot: screenshot || null,
+    // Rzuć błąd dalej, aby API mogło go obsłużyć
+    if (error instanceof Error) {
+      throw error
     }
+    throw new Error('Nie udało się połączyć z podanym adresem URL')
   }
 }
 

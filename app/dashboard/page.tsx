@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react"
 import { useEffect, useState, Suspense, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Plus, Trash2, ExternalLink, Copy, Check, Crown, Upload, X, Link as LinkIcon, Settings } from "lucide-react"
+import { Plus, Trash2, ExternalLink, Copy, Check, Crown, Upload, X, Link as LinkIcon, Settings, Loader2 } from "lucide-react"
 import Image from "next/image"
 import ProjectImage from "../components/ProjectImage"
 import { useToast } from "../components/ToastContainer"
@@ -74,6 +74,7 @@ export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([])
   const [url, setUrl] = useState("")
   const [loading, setLoading] = useState(false)
+  const [showLongLoadingMessage, setShowLongLoadingMessage] = useState(false)
   const [portfolioUrl, setPortfolioUrl] = useState("")
   const [copied, setCopied] = useState(false)
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -133,19 +134,16 @@ export default function Dashboard() {
       const res = await fetch("/api/profile")
       if (res.ok) {
         const data = await res.json()
-        console.log("[DEBUG] Profile fetched successfully:", data)
         setProfile(data)
         updatePortfolioUrl(data.customSlug)
       } else {
         // Jeśli request się nie powiódł, ustaw profile na null, ale zakończ loading
-        console.log("[DEBUG] Profile fetch failed, status:", res.status)
         setProfile(null)
       }
     } catch (error) {
-      console.error("[DEBUG] Error fetching profile:", error)
+      console.error("Error fetching profile:", error)
       setProfile(null)
     } finally {
-      console.log("[DEBUG] Setting loadingProfile to false")
       setLoadingProfile(false)
     }
   }, [updatePortfolioUrl])
@@ -217,16 +215,6 @@ export default function Dashboard() {
       }
     }
   }, [profile])
-
-  // Debug logging - tymczasowe
-  useEffect(() => {
-    console.log("[DEBUG] Premium section render check:", {
-      loadingProfile,
-      profile,
-      profileIsPremium: profile?.isPremium,
-      shouldShow: !loadingProfile && (!profile || !profile.isPremium)
-    })
-  }, [loadingProfile, profile])
 
   const handleCheckout = async () => {
     try {
@@ -450,16 +438,76 @@ export default function Dashboard() {
     }
   }
 
+  const normalizeUrl = (inputUrl: string): string | null => {
+    const trimmed = inputUrl.trim()
+    if (!trimmed) return null
+
+    // Jeśli URL już zaczyna się od http:// lub https://, zwróć go
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      return trimmed
+    }
+
+    // W przeciwnym razie dodaj https://
+    return `https://${trimmed}`
+  }
+
+  const isValidUrl = (urlString: string): boolean => {
+    // Sprawdź czy URL zaczyna się od protokołu (powinien być już znormalizowany)
+    if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
+      return false
+    }
+
+    // Usuń protokół i sprawdź czy zostało coś sensownego
+    const urlWithoutProtocol = urlString.replace(/^https?:\/\//, "").trim()
+    
+    // Sprawdź czy po protokole jest coś (minimum 1 znak)
+    if (urlWithoutProtocol.length === 0) {
+      return false
+    }
+
+    // Sprawdź czy nie zawiera tylko białych znaków
+    if (/^\s*$/.test(urlWithoutProtocol)) {
+      return false
+    }
+
+    // Podstawowa walidacja - jeśli ma protokół i coś po nim, to jest OK
+    // Szczegółową walidację wykona API endpoint
+    return true
+  }
+
   const addProject = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!url.trim()) return
+    if (!url.trim()) {
+      showToast("Wprowadź adres URL", "error")
+      return
+    }
+
+    // Normalizuj URL (dodaj https:// jeśli brakuje)
+    const normalizedUrl = normalizeUrl(url)
+    if (!normalizedUrl) {
+      showToast("Wprowadź adres URL", "error")
+      return
+    }
+
+    // Waliduj URL
+    if (!isValidUrl(normalizedUrl)) {
+      showToast("Wprowadź adres URL", "error")
+      return
+    }
 
     setLoading(true)
+    setShowLongLoadingMessage(false)
+    
+    // Timer dla komunikatu o długim pobieraniu
+    const longLoadingTimer = setTimeout(() => {
+      setShowLongLoadingMessage(true)
+    }, 5000)
+
     try {
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim() }),
+        body: JSON.stringify({ url: normalizedUrl }),
       })
 
       if (res.ok) {
@@ -468,13 +516,17 @@ export default function Dashboard() {
         setUrl("")
         showToast("Projekt został dodany!", "success")
       } else {
-        showToast("Nie udało się dodać projektu. Sprawdź czy URL jest poprawny.", "error")
+        const errorData = await res.json().catch(() => ({ error: "Nie udało się dodać projektu" }))
+        const errorMessage = errorData.error || "Nie udało się dodać projektu. Sprawdź czy URL jest poprawny i dostępny."
+        showToast(errorMessage, "error")
       }
     } catch (error) {
       console.error("Error adding project:", error)
       showToast("Wystąpił błąd podczas dodawania projektu.", "error")
     } finally {
+      clearTimeout(longLoadingTimer)
       setLoading(false)
+      setShowLongLoadingMessage(false)
     }
   }
 
@@ -914,23 +966,41 @@ export default function Dashboard() {
           {/* Add Project Form */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 mb-8 shadow-lg">
             <h2 className="text-xl font-semibold mb-4">Dodaj Nowy Projekt</h2>
-            <form onSubmit={addProject} className="flex gap-2">
-              <input
-                type="url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://example.com"
-                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                required
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Plus size={20} />
-                {loading ? "Dodawanie..." : "Dodaj"}
-              </button>
+            <form onSubmit={addProject} className="flex flex-col gap-3">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="example.com lub https://example.com"
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                  required
+                  disabled={loading}
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 size={20} className="animate-spin" />
+                      <span>Dodawanie...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={20} />
+                      <span>Dodaj</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              {showLongLoadingMessage && (
+                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-lg">
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Pobieranie trwa dłużej ze względu na treści multimedialne na stronie...</span>
+                </div>
+              )}
             </form>
           </div>
 

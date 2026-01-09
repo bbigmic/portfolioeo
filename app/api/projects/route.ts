@@ -40,17 +40,63 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Sprawdź czy użytkownik istnieje w bazie danych
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    })
+
+    if (!user) {
+      console.error(`User not found in database: ${session.user.id}`)
+      return NextResponse.json(
+        { error: "User not found. Please log in again." },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     const { url } = projectSchema.parse(body)
 
-    // Fetch metadata
-    const metadata = await fetchSiteMetadata(url)
+    // Fetch metadata - sprawdza czy URL jest dostępny
+    let metadata
+    try {
+      metadata = await fetchSiteMetadata(url)
+    } catch (error) {
+      console.error('Error fetching site metadata:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Nie udało się połączyć z podanym adresem URL'
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: 400 }
+      )
+    }
 
-    // Generate screenshot URL - use full URL to our API endpoint
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-    const screenshotUrl = metadata.screenshot 
-      ? `${baseUrl}/api/screenshot?url=${encodeURIComponent(metadata.screenshot)}`
-      : null
+    // Generate screenshot and upload to Cloudinary
+    let screenshotUrl: string | null = null
+    if (metadata.screenshot) {
+      try {
+        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+        const screenshotResponse = await fetch(
+          `${baseUrl}/api/screenshot?url=${encodeURIComponent(metadata.screenshot)}&returnUrl=true`,
+          { signal: AbortSignal.timeout(90000) } // 90 sekund timeout dla stron z filmami
+        )
+        
+        if (screenshotResponse.ok) {
+          const screenshotData = await screenshotResponse.json()
+          if (screenshotData.url && !screenshotData.error) {
+            screenshotUrl = screenshotData.url
+          }
+        } else {
+          console.warn('Screenshot generation failed, continuing without screenshot')
+        }
+      } catch (error) {
+        // Jeśli timeout, loguj ale kontynuuj bez screenshotu
+        if (error instanceof Error && error.name === 'TimeoutError') {
+          console.warn('Screenshot generation timed out (strona może zawierać filmy), continuing without screenshot')
+        } else {
+          console.error('Error generating screenshot:', error)
+        }
+        // Kontynuuj bez screenshotu - nie blokuj tworzenia projektu
+      }
+    }
 
     // Get current max order
     const maxOrder = await prisma.project.findFirst({
@@ -59,6 +105,8 @@ export async function POST(request: NextRequest) {
       select: { order: true },
     })
 
+    console.log("Creating project with userId:", session.user.id)
+    
     const project = await prisma.project.create({
       data: {
         url,
@@ -80,9 +128,23 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    console.error("Error creating project:", error)
+    
+    // Log szczegółowych informacji o błędzie
+    if (error && typeof error === 'object' && 'code' in error) {
+      console.error("Error creating project - Prisma error:", {
+        code: (error as any).code,
+        meta: (error as any).meta,
+        userId: session?.user?.id,
+      })
+    } else {
+      console.error("Error creating project:", error)
+    }
+    
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error"
+      },
       { status: 500 }
     )
   }
