@@ -1,0 +1,28 @@
+{
+  "name": "Portfolioeo - Portfolio Online w Minutę",
+  "short_name": "Portfolioeo",
+  "description": "Stwórz swoje portfolio online w minutę! Portfolio programisty, developer portfolio, portfolio IT - wszystko automatycznie.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo-portfolioeo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-portfolioeo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "developer", "portfolio"],
+  "lang": "pl",
+  "dir": "ltr"
+}
+

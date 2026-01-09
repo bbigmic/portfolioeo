@@ -4,6 +4,7 @@ import Image from "next/image"
 import { ExternalLink } from "lucide-react"
 import Link from "next/link"
 import ProjectImage from "../../components/ProjectImage"
+import type { Metadata } from "next"
 
 async function getProjects(userId: string) {
   try {
@@ -28,6 +29,79 @@ async function getUser(userId: string) {
   } catch (error) {
     console.error("Error fetching user:", error)
     return null
+  }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { userId: string }
+}): Promise<Metadata> {
+  const user = await getUser(params.userId)
+  const projects = await getProjects(params.userId)
+  
+  if (!user) {
+    return {
+      title: "Portfolio nie znalezione",
+    }
+  }
+
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
+    ? `https://${process.env.VERCEL_URL || 'portfolieo.vercel.app'}`
+    : 'http://localhost:3000';
+
+  const portfolioUrl = `${baseUrl}/portfolio/${params.userId}`
+  const userName = user.name || "Portfolio"
+  const title = `${userName} - Portfolio Online | Portfolio Programisty | Portfolioeo`
+  const description = projects.length > 0
+    ? `Portfolio online ${userName} - zobacz projekty programistyczne, aplikacje web i portfolio IT. ${projects.length} ${projects.length === 1 ? 'projekt' : 'projektów'} w portfolio.`
+    : `Portfolio online ${userName} - portfolio programisty, developer portfolio, portfolio IT stworzone w Portfolioeo.`
+
+  return {
+    title,
+    description,
+    keywords: [
+      "portfolio online",
+      "portfolio programisty",
+      "portfolio developer",
+      `${userName} portfolio`,
+      "portfolio IT",
+      "portfolio projektów",
+      "portfolio programistyczne",
+      "portfolio web",
+    ].join(", "),
+    openGraph: {
+      title,
+      description,
+      url: portfolioUrl,
+      siteName: "Portfolioeo",
+      images: user.image ? [
+        {
+          url: user.image,
+          width: 1200,
+          height: 630,
+          alt: `${userName} - Portfolio`,
+        },
+      ] : [
+        {
+          url: `${baseUrl}/logo-portfolioeo.png`,
+          width: 1200,
+          height: 630,
+          alt: `${userName} - Portfolio`,
+        },
+      ],
+      locale: "pl_PL",
+      type: "profile",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: user.image ? [user.image] : [`${baseUrl}/logo-portfolioeo.png`],
+    },
+    alternates: {
+      canonical: portfolioUrl,
+    },
   }
 }
 

@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import SignInButton from "./components/SignInButton";
+import Image from "next/image";
+import StructuredData from "./components/StructuredData";
 import { 
   Zap, 
   Link2, 
@@ -9,7 +11,6 @@ import {
   Share2, 
   CheckCircle2, 
   ArrowRight,
-  Sparkles,
   Globe,
   Clock,
   Palette
@@ -23,12 +24,21 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      {/* Navigation */}
+    <>
+      <StructuredData />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        {/* Navigation */}
       <nav className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <Image
+              src="/logo-portfolioeo.png"
+              alt="Portfolioeo Logo"
+              width={32}
+              height={32}
+              className="w-8 h-8"
+              priority
+            />
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Portfolioeo
             </span>
@@ -251,7 +261,13 @@ export default async function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
-              <Sparkles className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <Image
+                src="/logo-portfolioeo.png"
+                alt="Portfolioeo Logo"
+                width={24}
+                height={24}
+                className="w-6 h-6"
+              />
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Portfolioeo
               </span>
@@ -262,7 +278,8 @@ export default async function Home() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 }
 
